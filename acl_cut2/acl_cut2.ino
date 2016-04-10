@@ -188,6 +188,7 @@ void line(float newx,float newy) {
  
     
     for(i=0;i<dx;++i) {
+      if( (!digitalRead(BUT_X1)) && (!digitalRead(BUT_X1)))return;//emergency abort
       m1step(dirx);
       over+=dy;
       if(over>=dx) {
@@ -202,6 +203,7 @@ void line(float newx,float newy) {
     long speedUpLenI=speedUpLen*dx/nlen; 
   
     for(i=0;i<dy;++i) {
+      if( (!digitalRead(BUT_X1)) && (!digitalRead(BUT_X1)))return;//emergency abort
       m2step(diry);
       over+=dx;
       if(over>=dy) {
