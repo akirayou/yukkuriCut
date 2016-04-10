@@ -1,0 +1,39 @@
+import serial
+import sys
+
+
+ser = serial.Serial(sys.argv[1], timeout=0.01)
+ser.reset_input_buffer()
+ser.reset_output_buffer()
+
+
+
+
+def command(cmd):
+    ser.write(cmd.encode("utf-8"))
+    ser.flush()    
+    cmd=cmd.rstrip()
+    if(cmd[0]=='#'): return cmd
+    ret=b' '
+    while(ret.decode().find(cmd)<0):
+        ret+=ser.read(10000)        
+    cmdPos=ret.decode().find(cmd)
+    while(ret.decode()[cmdPos:].find('>')<0):
+        ret+=ser.read(10000)
+    ret+=ser.read(10000)
+    ret+=ser.read(10000)
+    ret+=ser.read(10000)
+            
+    return ret.decode();
+        
+ser.write("\n".encode("utf-8"))
+ser.write("\n".encode("utf-8"))
+ser.write("\n".encode("utf-8"))
+    
+print(command("M114\n"))
+
+for line in sys.stdin:
+    if(len(line)<2):continue
+    print(command(line))
+    #print(command("M114\n"))
+    
