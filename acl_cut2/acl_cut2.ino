@@ -29,7 +29,7 @@ float heaterA=0;
 float monA;
 void wireCont(){
   static unsigned long out=0;
-  const  long ss=5;
+  const  long ss=2;
   int ad=analogRead(PIN_HEATER_SENS);//consume 100us
   //500mV=0A 133mV/A
   //1 ADbit= 0.03671287593A  500mV=102.4
@@ -39,7 +39,7 @@ void wireCont(){
   
   if(A<heaterA)out+=1;
   if(heaterA<A)out-=1;
-  out+=(heaterA-A)*3*ss;
+  out+=round((heaterA-A)*5);
   
   if(out<0)out=0;
   if(255*ss<out)out=255*ss;
@@ -52,6 +52,22 @@ void wireInit(){
 }
 void tick(){
   wireCont();
+}
+//pause for  30min is max total delay in each command
+unsigned long Atime;
+unsigned long AtimeTar;
+void ApauseInit(){
+  Atime=micros();
+}
+
+void Apause(long ms,long minimum=MIN_STEP_DELAY){
+  Atime+=ms;
+  minimum+= micros();
+  if((long)(Atime-minimum)<0){
+    while( (long) ( micros()-minimum)<0); 
+  }else{
+    while( (long) ( micros()-Atime)<0); //wait for time comes
+  }
 }
 
 
@@ -98,16 +114,6 @@ char mode_abs=0;  // absolute mode?
 
 
 
-//pause for  30min is max total delay in each command
-unsigned long Atime;
-unsigned long AtimeTar;
-void ApauseInit(){
-  Atime=micros();
-}
-void Apause(long ms){
-  Atime+=ms;
-  while( (long) ( micros()-Atime)<0); //wait for time comes
-}
 
 
 
@@ -283,11 +289,13 @@ void arc(float cx,float cy,float x,float y,float dir) {
  **/
 float parsenumber(char code,float val) {
   char *ptr=buffer;
-  while(ptr && *ptr && ptr<buffer+sofar) {
+  while( *ptr && ptr<buffer+sofar) {
     if(*ptr==code) {
       return atof(ptr+1);
     }
-    ptr=strchr(ptr,' ')+1;
+    ptr=strchr(ptr,' ');
+    if(ptr==0)break;
+    ptr++;
   }
   return val;
 } 

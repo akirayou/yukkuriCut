@@ -38,8 +38,8 @@
 #define PIN_HEATER_SENS 0
 #define BUT_Y1 5
 #define BUT_Y2 22
-#define BUT_X1 23
-#define BUT_X2 13
+#define BUT_X1 13
+#define BUT_X2 23
 
 
 // for arc directions
