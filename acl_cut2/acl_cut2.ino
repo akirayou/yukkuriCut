@@ -163,18 +163,22 @@ void line(float newx,float newy) {
   float nlen=hypot(dx,dy);
 
   //Dead volume correction   (now testing. Is it good or bad?)
-  static float speedUpLen=0; 
+  float speedUpLen=0; 
   {
     //cutting wire width little bit lager than real width.Because it includes vapor layer
-    //Unit is step. for example 1100step/mm and 0.2mm wire real width is 220.
-    const float wireWidth=360; 
+    //Unit is step. for example 1000step/mm and 0.2mm wire real width is 200.
+    const float wireWidth=220; 
 
     static long odx=0,ody=0;
     float olen=hypot(odx,ody);
-    float halfTheta=0.5 * acos(( ((float)dx)*odx+((float)dy)*ody )   /nlen/olen);
+    float halfTheta=atan2(odx,ody)-atan2(dx,dy);//          0.5 * acos(( ((float)dx)*odx+((float)dy)*ody )   /nlen/olen);
+    if(halfTheta<0)halfTheta+=2*M_PI;
+    if(M_PI<halfTheta)halfTheta=2*M_PI-halfTheta;
+    halfTheta/=2;
+    
     if(olen<1 || nlen<1)halfTheta=0;
-    speedUpLen*=max(0,cos(halfTheta*2));
-    speedUpLen+=(tan(halfTheta)-halfTheta) * wireWidth/4;
+   
+    speedUpLen=(tan(halfTheta)-halfTheta) * wireWidth/4;
     if(wireWidth*10<speedUpLen)speedUpLen= wireWidth*10;
     odx=dx;
     ody=dy;
