@@ -24,35 +24,13 @@
 
 
 #include "config.h"
-#include <TimerThree.h>
+//heater
+void wireInit();
 float heaterA=0;
 float monA;
-void wireCont(){
-  static unsigned long out=0;
-  const  long ss=2;
-  int ad=analogRead(PIN_HEATER_SENS);//consume 100us
-  //500mV=0A 133mV/A
-  //1 ADbit= 0.03671287593A  500mV=102.4
-  float A=(ad-102.4)*0.03671287593;
-  A=monA*0.9+A*0.1;
-  monA=A;
-  
-  if(A<heaterA)out+=1;
-  if(heaterA<A)out-=1;
-  out+=round((heaterA-A)*5);
-  
-  if(out<0)out=0;
-  if(255*ss<out)out=255*ss;
-  if(heaterA<0.001)out=0;
-  analogWrite(PIN_HEATER,out/ss);
-}
-void wireInit(){
-  pinMode(PIN_HEATER,OUTPUT);
-  analogWrite(PIN_HEATER,0);
-}
-void tick(){
-  wireCont();
-}
+//heater --end
+float deadVolumeCol(long dx,long dy,long odx,long ody);
+
 //pause for  30min is max total delay in each command
 unsigned long Atime;
 unsigned long AtimeTar;
@@ -133,7 +111,7 @@ void feedrate(float nfr) {
     Serial.println(F("mm/s."));
     return;
   }
-  step_delay = 1000000.0/nfr;
+  step_delay = 1000000/nfr;
   fr=nfr;
 }
 
@@ -155,34 +133,23 @@ void position(float npx,float npy) {
  * @input newx the destination x position
  * @input newy the destination y position
  **/
-void line(float newx,float newy) {
+void line(float newx,float newy,bool doSpeedUp=true) {
   
   long dx=newx-px;
   long dy=newy-py;
   if(dx==0 && dy==0)return;
   float nlen=hypot(dx,dy);
-
+  static long odx,ody;
   //Dead volume correction   (now testing. Is it good or bad?)
-  float speedUpLen=0; 
-  {
-    //cutting wire width little bit lager than real width.Because it includes vapor layer
-    //Unit is step. for example 1000step/mm and 0.2mm wire real width is 200.
-    const float wireWidth=220; 
+  static float speedUpLen=0;
+  speedUpLen*=max(0,cos(atan2(odx,ody)-atan2(dx,dy))); //for safety
+  if(doSpeedUp)speedUpLen+=deadVolumeCol(dx,dy,odx,ody);
+  //speedUpLen=0;
+  const float speedupRate=1.5;
+  speedUpLen/=(speedupRate-1)/speedupRate;
+  odx=dx;
+  ody=dy;
 
-    static long odx=0,ody=0;
-    float olen=hypot(odx,ody);
-    float halfTheta=atan2(odx,ody)-atan2(dx,dy);//          0.5 * acos(( ((float)dx)*odx+((float)dy)*ody )   /nlen/olen);
-    if(halfTheta<0)halfTheta+=2*M_PI;
-    if(M_PI<halfTheta)halfTheta=2*M_PI-halfTheta;
-    halfTheta/=2;
-    
-    if(olen<1 || nlen<1)halfTheta=0;
-   
-    speedUpLen=(tan(halfTheta)-halfTheta) * wireWidth/4;
-    if(wireWidth*10<speedUpLen)speedUpLen= wireWidth*10;
-    odx=dx;
-    ody=dy;
-  }
 
   int dirx=dx>0?1:-1;
   int diry=dy>0?-1:1;  // because the motors are mounted in opposite directions
@@ -194,9 +161,8 @@ void line(float newx,float newy) {
 
   if(dx>dy) {
     float step_delay2=step_delay * nlen/dx;  //real path length VS dx correction
-    long speedUpLenI=speedUpLen*dx/nlen;
- 
-    
+    long speedUpLenI=round(speedUpLen*dx/nlen);
+
     for(i=0;i<dx;++i) {
       if( (!digitalRead(BUT_X1)) && (!digitalRead(BUT_X1)))return;//emergency abort
       m1step(dirx);
@@ -205,13 +171,11 @@ void line(float newx,float newy) {
         over-=dx;
         m2step(diry);
       }
-      Apause(i<speedUpLenI?MIN_STEP_DELAY: step_delay2);
+      Apause(i<speedUpLenI? max(MIN_STEP_DELAY,step_delay2/speedupRate): step_delay2);
     }
-    speedUpLen-=i*nlen/dx;
   } else {
     float step_delay2=step_delay * nlen/dy;
-    long speedUpLenI=speedUpLen*dx/nlen; 
-  
+    long speedUpLenI=round(speedUpLen*dy/nlen);
     for(i=0;i<dy;++i) {
       if( (!digitalRead(BUT_X1)) && (!digitalRead(BUT_X1)))return;//emergency abort
       m2step(diry);
@@ -220,11 +184,11 @@ void line(float newx,float newy) {
         over-=dy;
         m1step(dirx);
       }
-      Apause(i<speedUpLenI?MIN_STEP_DELAY: step_delay2);
+      Apause(i<speedUpLenI? max(MIN_STEP_DELAY,step_delay2/speedupRate): step_delay2);
     }
-    speedUpLen-=i*nlen/dy;
   }
-  
+  speedUpLen-=nlen;
+  if(speedUpLen<0)speedUpLen=0;
   px+=dirx*dx; //bubfix  don't use newXY
   py-=diry*dy;
 }
@@ -256,7 +220,6 @@ void arc(float cx,float cy,float x,float y,float dir) {
     line(x,y);
     return;
   }
-  
   // find angle of arc (sweep)
   float angle1=atan3(dy,dx);
   float angle2=atan3(y-cy,x-cx);
@@ -268,17 +231,20 @@ void arc(float cx,float cy,float x,float y,float dir) {
   
   float nx, ny, angle3, scale;
   float angleStep=PI-acos(1/radius-1); //1step error is enough fine
+  bool first=true;
   if(theta<0){
     for(angle3=angle1;angle3>=theta+angle1+angleStep;angle3-=angleStep){
       nx = cx + cos(angle3) * radius;
       ny = cy + sin(angle3) * radius;
       line(nx,ny);
+      first=false;
     }
   }else{
     for(angle3=angle1;angle3<=theta+angle1-angleStep;angle3+=angleStep){
       nx = cx + cos(angle3) * radius;
       ny = cy + sin(angle3) * radius;
       line(nx,ny);
+      first=false;
     }
   }
   line(x,y);
@@ -426,10 +392,9 @@ void setup() {
   wireInit();
   buttonInit();
   // put your setup code here, to run once:
-  Timer3.initialize(10*1000);//us
-  Timer3.attachInterrupt(tick);
 
-  
+
+
   Serial.begin(BAUD);  // open coms
 
   setup_controller();  
