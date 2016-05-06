@@ -83,7 +83,7 @@ float fr=0;  // human version
 long step_delay;  // machine version
 
 // settings
-char mode_abs=0;  // absolute mode?
+char mode_abs=1;  // absolute mode?
 
 
 //------------------------------------------------------------------------------
@@ -143,6 +143,7 @@ void line(float newx,float newy,bool doSpeedUp=true) {
   //Dead volume correction   (now testing. Is it good or bad?)
   static float speedUpLen=0;
   speedUpLen*=max(0,cos(atan2(odx,ody)-atan2(dx,dy))); //for safety
+  //speedUpLen=0;//for more safety
   if(doSpeedUp)speedUpLen+=deadVolumeCol(dx,dy,odx,ody);
   //speedUpLen=0;
   const float speedupRate=1.5;
@@ -216,7 +217,7 @@ void arc(float cx,float cy,float x,float y,float dir) {
   float dy = py - cy;
   float radius=sqrt(dx*dx+dy*dy);
   //exception when radius=0 
-  if(radius<1 ){
+  if(radius<1 || radius*0.001> abs(px-x)+abs(py-y) ){
     line(x,y);
     return;
   }
@@ -231,6 +232,7 @@ void arc(float cx,float cy,float x,float y,float dir) {
   
   float nx, ny, angle3, scale;
   float angleStep=PI-acos(1/radius-1); //1step error is enough fine
+  if(angleStep<0.01)angleStep=0.01;
   bool first=true;
   if(theta<0){
     for(angle3=angle1;angle3>=theta+angle1+angleStep;angle3-=angleStep){

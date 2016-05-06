@@ -1,7 +1,7 @@
 float deadVolumeCol(long dx,long dy,long odx,long ody){
   //cutting wire width little bit lager than real width.Because it includes vapor layer
   //Unit is step. for example 1000step/mm and 0.2mm wire real width is 200.
-  const float wireWidth=300; 
+  const float wireWidth=200; 
   float nlen=hypot(dx,dy);
 
   float olen=hypot(odx,ody);
