@@ -7,6 +7,8 @@ Created on Sat Apr 23 06:26:38 2016
 
 import sys
 import numpy as np
+xsig= 1
+ysig= -1
 
 def revCmd(c):
     if(c["G"]==2):c["G"]=3
@@ -56,8 +58,23 @@ nx=np.array( [ c['X'] for c in cmd])
 ny=np.array( [ c['Y'] for c in cmd])
 lx=np.array( [ c['LX'] for c in cmd])
 ly=np.array( [ c['LY'] for c in cmd])
-min_x=min(np.min(nx),np.min(lx))
-min_y=min(np.min(ny),np.min(ly))
+min_x=min(np.min(nx*xsig),np.min(lx*xsig))*xsig
+min_y=min(np.min(ny*ysig),np.min(ly*ysig))*ysig
+#move to 0,0 (panel setting position normalizing)
+if True:
+    nx-=min_x
+    lx-=min_x
+    ny-=min_y
+    ly-=min_y
+    for c in cmd:
+        c['X']-=min_x
+        c['LX']-=min_x
+        c['Y']-=min_y
+        c['LY']-=min_y
+        
+    min_x=0
+    min_y=0
+
 
 
 #set startPoint
@@ -91,11 +108,13 @@ while 0<len(cmd):
     lastX=sortedCmd[-1]["X"]
     lastY=sortedCmd[-1]["Y"]
 
-cutStart="X"+str(sortedCmd[0]['LX'])+" Y"+str(min_y-3)
+#cutStart="X"+str(min_x-3*xsig)+" Y"+str(sortedCmd[0]['LY'])
+#cutStart="X"+str(sortedCmd[0]['LX'])+" Y"+str(min_y-3*ysig)
+cutStart="X"+str(min_x)+" Y"+str(min_y-3*ysig)
 
 
 print("G90")
-print("G01 F2.4")
+print("G01 F4.4")
 print("M104 S0.1")
 for i in range(10): print("G04 P500\nM39")
 print("G92 "+cutStart)
