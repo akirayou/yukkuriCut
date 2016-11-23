@@ -9,6 +9,9 @@
 // ---modified for YukkuriCutter
 // 
 
+//#define FASTER_TIMER 8
+
+#define FASTER_TIMER 64
 
 //About Hardware
 //heater Driver(PIN_HEATER) is hiActive FET (PWM) with 5V
@@ -28,6 +31,7 @@
 void wireInit();
 float heaterA=0;
 float monA;
+float monOut;
 //heater --end
 float deadVolumeCol(long dx,long dy,long odx,long ody);
 
@@ -37,9 +41,10 @@ unsigned long AtimeTar;
 void ApauseInit(){
   Atime=micros();
 }
-
 void Apause(long ms,long minimum=MIN_STEP_DELAY){
-  Atime+=ms;
+  
+  Atime+=ms*FASTER_TIMER;
+  minimum*=FASTER_TIMER;
   minimum+= micros();
   if((long)(Atime-minimum)<0){
     while( (long) ( micros()-minimum)<0); 
@@ -365,8 +370,12 @@ void processCommand() {
     break;
   case 39:
     Serial.println(F("HATSUNE-MIKU is not implimented Yet."));
-    Serial.print(F("heaterA "));
+    Serial.print(F("  heaterA "));
     Serial.println(monA);
+    Serial.print(F("  heater out "));
+    Serial.println(monOut);
+    Serial.print(F(" Est P/L= "));
+    Serial.println(heaterA* monA / monOut * 255*4  );
     break;
   case 100:  help();  break;
   case 114:  where();  break;
