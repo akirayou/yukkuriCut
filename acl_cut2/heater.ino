@@ -2,9 +2,12 @@
 //extern  float heaterA=0;
 //extern  float monA;
 //extern  int  monOut;
+static bool stopRent=false;
 void wireCont(){
   static unsigned long out=0;
   const  long ss=4;
+  if(stopRent)return;
+  sei();
   int ad=analogRead(PIN_HEATER_SENS);//consume 100us
   //500mV=0A 133mV/A
   //1 ADbit= 0.03671287593A  500mV=102.4
@@ -25,7 +28,12 @@ void wireCont(){
   if(255*ss<out)out=255*ss;
   if(heaterA<0.001)out=0;
   monOut =monOut*0.9 + 0.1*out;
-  analogWrite(PIN_HEATER,out/ss);
+  if(heaterA>99){
+    analogWrite(PIN_HEATER,255);
+  }else{    
+    analogWrite(PIN_HEATER,out/ss);
+  }
+  stopRent=false;
 }
 void wireInit(){
 #if FASTER_TIMER == 8

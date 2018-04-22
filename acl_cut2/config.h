@@ -10,7 +10,6 @@
 // modified by @akira_you Nico-TECH 2016-4
 // 
 
-
 //------------------------------------------------------------------------------
 // CONSTANTS
 //------------------------------------------------------------------------------
@@ -34,6 +33,7 @@
 
 
 //IO PIN
+#define FAN_SERVO_PIN 3 
 #define PIN_HEATER 11
 #define PIN_HEATER_SENS 0
 #define BUT_Y1 5

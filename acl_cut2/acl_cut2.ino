@@ -10,8 +10,11 @@
 // 
 
 //#define FASTER_TIMER 8
-
+//FAN
 #define FASTER_TIMER 64
+#include <Servo.h>
+Servo fanServo;
+int fanLevel=0;
 
 //About Hardware
 //heater Driver(PIN_HEATER) is hiActive FET (PWM) with 5V
@@ -34,7 +37,6 @@ float monA;
 float monOut;
 //heater --end
 float deadVolumeCol(long dx,long dy,long odx,long ody);
-
 //pause for  30min is max total delay in each command
 unsigned long Atime;
 unsigned long AtimeTar;
@@ -306,6 +308,8 @@ void where() {
 void help() {
   Serial.print(F("GcodeCNCDemo2AxisV1 "));
   Serial.println(VERSION);
+  Serial.print("Heatwire using timer No.(in Arduino.h)[must not to be 3-5 on 32u4] ");
+  Serial.println(digitalPinToTimer(PIN_HEATER));
   Serial.println(F("Commands:"));
   Serial.println(F("G00 [X()] [Y(mm)] [F(mm/sec)]; - line"));
   Serial.println(F("G01 [X(mm)] [Y(mm)] [F(feedrate)]; - line"));
@@ -318,7 +322,7 @@ void help() {
   Serial.println(F("M18; - disable motors"));
   Serial.println(F("M100; - this help message"));
   Serial.println(F("M114; - report position and feedrate"));
-  Serial.println(F("M104 S(heater A); - set heaater current (A)"));
+  Serial.println(F("M104 S(heater A); - set heaater current (A) over 99 means always ON"));
   Serial.println(F("All commands must end with a newline."));
 }
 
@@ -376,11 +380,23 @@ void processCommand() {
     Serial.println(monOut);
     Serial.print(F(" Est P/L= "));
     Serial.println(heaterA* monA / monOut * 255*4  );
+    Serial.print(F(" fanLevel "));
+    Serial.println(fanLevel  );
     break;
   case 100:  help();  break;
   case 114:  where();  break;
   case 104:
     heaterA=parsenumber('S',0);
+    break;
+  case 105:
+    {
+      float tmp=parsenumber('S',0);
+      if(tmp<0)tmp=0;
+      if(1000<tmp)tmp=1000;
+      fanLevel=tmp;
+      fanServo.writeMicroseconds(1000+fanLevel);    
+
+    }
     break;
   default:  break;
   }
@@ -400,6 +416,8 @@ void ready() {
  * First thing this machine does on startup.  Runs only once.
  */
 void setup() {
+  fanServo.attach(FAN_SERVO_PIN);
+  fanServo.writeMicroseconds(1000);
   wireInit();
   buttonInit();
   // put your setup code here, to run once:
@@ -407,7 +425,7 @@ void setup() {
 
 
   Serial.begin(BAUD);  // open coms
-
+  
   setup_controller();  
   position(0,0);  // set staring position
   feedrate((MAX_FEEDRATE + MIN_FEEDRATE)/2);  // set default speed
@@ -423,7 +441,7 @@ void setup() {
 void loop() {
   // listen for serial commands
   buttonCont();
-
+  
   while(Serial.available() > 0) {  // if something is available
     char c=Serial.read();  // get it
     Serial.print(c);  // repeat it back so I know you got the message
