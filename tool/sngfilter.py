@@ -3,11 +3,13 @@
 Created on Sat Apr 23 06:26:38 2016
 
 @author: akira
+
+ngc filter with sort 
 """
 
 import sys
 import numpy as np
-xsig= 1
+xsig= -1
 ysig= -1
 
 def revCmd(c):
@@ -110,7 +112,7 @@ while 0<len(cmd):
 
 #cutStart="X"+str(min_x-3*xsig)+" Y"+str(sortedCmd[0]['LY'])
 #cutStart="X"+str(sortedCmd[0]['LX'])+" Y"+str(min_y-3*ysig)
-cutStart="X"+str(min_x)+" Y"+str(min_y-3*ysig)
+cutStart="X"+str(min_x-3*xsig)+" Y"+str(min_y-0*ysig)
 
 
 print("G90")

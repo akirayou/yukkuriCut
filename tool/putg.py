@@ -1,3 +1,4 @@
+#!/python 
 import serial
 import sys
 
@@ -10,8 +11,8 @@ print("Device:",dev)
 class Cmd:
     def __init__(self,dev):
         self.ser = serial.Serial(dev, timeout=0.01)
-        self.ser.reset_input_buffer()
-        self.ser.reset_output_buffer()
+        #self.ser.reset_input_buffer()
+        #self.ser.reset_output_buffer()
         self.nowCmdNo=0
         self.results=[]
         self.lines=[]

@@ -25,6 +25,22 @@ G04 P500
 M39
 G04 P500
 M39
+G04 P500
+M39
+G04 P500
+M39
+G04 P500
+M39
+G04 P500
+M39
+G04 P500
+M39
+G04 P500
+M39
+G04 P500
+M39
+G04 P500
+M39
 """ )
 for s in range(nofStep):
     f=round(step*s+startFeed,3)
@@ -33,9 +49,9 @@ for s in range(nofStep):
     print("""
 G00 X3 F2.4 
 G01  F"""+str(f)+"""
-G00 Y-20
+G00 Y-15
 G00 X3 
-G00 Y20
+G00 Y15
 """)
 
 print("""
